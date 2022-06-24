@@ -16,6 +16,8 @@ library
   build-depends:
       blaze-html >= 0.9
     , scotty >= 0.12
+    , containers
+    , text
 
 executable shortener
   import: common
