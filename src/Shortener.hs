@@ -2,28 +2,16 @@
 
 module Shortener where
 
-import Control.Monad.IO.Class (MonadIO(liftIO))
-import Data.Foldable (for_)
-import Data.IORef (modifyIORef, newIORef, readIORef)
-import Data.Map (Map)
-import qualified Data.Map as M
 import Text.Blaze.Html.Renderer.Text (renderHtml)
-import qualified Text.Blaze.Html5 as H
-import qualified Text.Blaze.Html5.Attributes as A
-import Web.Scotty
-import Data.Text (Text)
-import qualified Data.Text.Lazy as LT
+import Control.Monad.IO.Class (MonadIO(liftIO))
 import Network.HTTP.Types (status404)
 import Database.PostgreSQL.Simple
-import Data.Int
-import Database.PostgreSQL.Simple.FromRow
-import qualified Database.PostgreSQL.Simple.FromField as TL
-import Control.Monad (forM_)
-
--- data Url = Url {id :: Int, url :: Text}
-
--- instance FromRow Url where
---   fromRow = Url <$> field <*> field
+import Data.Foldable (for_)
+import Data.Text (Text)
+import Web.Scotty
+import qualified Text.Blaze.Html5.Attributes as A
+import qualified Text.Blaze.Html5 as H
+import qualified Data.Text.Lazy as LT
 
 localPG :: ConnectInfo
 localPG = defaultConnectInfo
@@ -36,14 +24,9 @@ localPG = defaultConnectInfo
 shortener :: IO ()
 shortener = do
   conn <- connect localPG
-  -- urls <- retrieveUrls conn
-  -- forM_ urls print
-
-  -- urlsR <- newIORef (1 :: Int, mempty :: Map Int Text)
   scotty 3000 $ do
 
     get "/" $ do
-      -- (_, urls) <- liftIO $ readIORef urlsR
       urls <- liftIO $ retrieveUrls conn
       html $ renderHtml $
         H.html $
@@ -60,22 +43,15 @@ shortener = do
 
     post "/" $ do
       url <- param "url"
-      -- liftIO $ modifyIORef urlsR $
-        -- \(i, urls) ->
-        --   (i + 1, M.insert i url urls)
       _ <- liftIO $ createUrl conn url
       redirect "/"
 
     get "/:index" $ do
       n <- param "index"
-      -- (_, urls) <- liftIO $ readIORef urlsR
-      -- case M.lookup n urls of
-      --   Just url ->
-      --     redirect (LT.fromStrict url)
-      --   Nothing ->
-      --     raiseStatus status404 "not found"
       res <- liftIO $ retrieveUrl conn n
-      redirect $ LT.fromStrict $ snd $ head res
+      case res of
+        [] -> raiseStatus status404 "not found"
+        _ -> redirect $ LT.fromStrict $ snd $ head res
 
 retrieveUrl :: Connection -> Int -> IO [(Int, Text)]
 retrieveUrl conn id = do
