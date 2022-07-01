@@ -19,6 +19,8 @@ library
     , containers
     , text
     , http-types
+    , postgresql-simple
+    , configurator
 
 executable shortener
   import: common
